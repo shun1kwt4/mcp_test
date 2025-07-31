@@ -1,10 +1,9 @@
-const { chromium } = require('playwright');
+const http = require('http');
 const WebSocket = require('ws');
+const { chromium } = require('playwright');
 
-const port = process.env.PORT || 3000;
-const wss = new WebSocket.Server({ port });
-
-console.log(`WebSocket server listening on port ${port}`);
+const server = http.createServer(); // ← 重要！
+const wss = new WebSocket.Server({ server }); // ← HTTPと統合
 
 wss.on('connection', async (ws) => {
   const browser = await chromium.launch();
@@ -16,7 +15,7 @@ wss.on('connection', async (ws) => {
     if (command === 'screenshot') {
       await page.goto('https://example.com');
       const buf = await page.screenshot();
-      ws.send(buf); // Send screenshot as binary
+      ws.send(buf);
     } else {
       ws.send(`Unknown command: ${command}`);
     }
@@ -25,4 +24,9 @@ wss.on('connection', async (ws) => {
   ws.on('close', async () => {
     await browser.close();
   });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server listening on ws://localhost:${PORT}`);
 });
